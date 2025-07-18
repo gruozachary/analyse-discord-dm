@@ -79,11 +79,11 @@ async function main() {
 
     const rl = readline.createInterface(process.stdin, process.stdout);
     await rl.question("Navigate to your DM, then press enter...");
+    rl.close();
 
     await fetcher.start();
 
     await browser.disconnect();
-    process.stdin.pause();
 }
 
 (async () => main())()
