@@ -17,6 +17,9 @@ async function main() {
 
     await fetcher.start();
 
+    const messages = fetcher.getMessages();
+    console.log(messages);
+
     await browser.disconnect();
 }
 

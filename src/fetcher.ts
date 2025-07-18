@@ -1,5 +1,10 @@
 import { Page, ConsoleMessage, ElementHandle } from "puppeteer-core";
 
+export interface Message {
+    id: number,
+    text: string,
+}
+
 enum FetcherState {
     Uninitialised,
     Initialised,
@@ -14,7 +19,7 @@ export default class Fetcher {
 
     private state: FetcherState = FetcherState.Uninitialised;
 
-    private readonly messages = new Map<string, string>;
+    private readonly messages = new Map<number, Message>;
 
     constructor(private readonly page: Page) { }
 
@@ -37,7 +42,16 @@ export default class Fetcher {
                 throw new Error("Error parsing message ID");
             }
 
-            this.messages.set(arr[1], "text");
+            const content = (await item.$(".messageContent_c19a55")
+                .then(handle =>
+                    handle?.$eval("span", el => el.textContent?.trim()))
+                .catch(() => "ERROR"))!;
+
+            const messageId = Number.parseInt(arr[1]);
+            this.messages.set(messageId, {
+                id: messageId,
+                text: content
+            });
         }
 
         console.log("Fetching completed.");
@@ -91,9 +105,9 @@ export default class Fetcher {
         this.state = FetcherState.Finished;
     }
 
-    getMessages(): Map<string, string> {
+    getMessages(): Array<Message> {
         this.assertState(FetcherState.Finished);
 
-        return this.messages;
+        return [...this.messages.values()].sort((m1, m2) => m1.id - m2.id);
     }
 }
