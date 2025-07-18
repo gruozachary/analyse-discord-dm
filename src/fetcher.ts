@@ -42,7 +42,7 @@ export default class Fetcher {
                 throw new Error("Error parsing message ID");
             }
 
-            const content = (await item.$(".messageContent_c19a55")
+            const content = (await item.$("[id^='message-content-']:not([class^='repliedTextContent'])")
                 .then(handle =>
                     handle?.$eval("span", el => el.textContent?.trim()))
                 .catch(() => "ERROR"))!;
@@ -97,7 +97,7 @@ export default class Fetcher {
         const body = (await this.page.$(".scroller__36d07"))!;
         const list = (await body.$("ol"))!;
 
-        for (let i = 0; i < 5; i++) {
+        for (let i = 0; i < 1; i++) {
             await this.fetchMessages(list);
             await this.loadMessages(body);
         }
