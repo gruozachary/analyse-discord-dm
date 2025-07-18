@@ -36,28 +36,34 @@ async function main() {
 
     const list = (await page.$(listSelector))!;
 
-    const items = (await list.$$("li"))!;
+    const messages = new Map<string, string>();
+    for (let i = 0; i < 5; i++) {
+        const items = (await list.$$("li"))!;
 
-    for (const item of items) {
-        const id = await item.evaluate(el => el.id);
+        for (const item of items) {
+            const id = await item.evaluate(el => el.id);
 
-        const arr = id.match(chatHtmlIdRegex);
+            const arr = id.match(chatHtmlIdRegex);
 
-        if (arr === null || arr.length < 1) {
-            throw new Error("Error parsing message ID");
+            if (arr === null || arr.length < 1) {
+                throw new Error("Error parsing message ID");
+            }
+
+            messages.set(arr[1], "text");
         }
 
-        console.log(arr[1]);
+        console.log(`Iteration ${i}: Fetching completed.`);
+
+        await body.evaluate((el) => {
+            el.scrollTop = 0;
+        });
+
+        console.log(`Iteration ${i}: Scrolling completed - waiting for new messages`);
+
+        await waitForMessageLoad(page);
+
+        console.log(`Iteration ${i}: New messages loaded completed.`);
     }
-
-
-    await body.evaluate((el) => {
-        el.scrollTop = 0;
-    });
-
-    console.log("Waiting for messages...");
-    await waitForMessageLoad(page);
-    console.log("Messages received!");
 
     await browser.disconnect();
     process.stdin.pause();
