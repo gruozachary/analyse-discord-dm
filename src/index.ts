@@ -1,9 +1,13 @@
 import puppeteer from "puppeteer-core";
 import readline from "node:readline/promises";
+import envPaths from "env-paths";
+import fs from "node:fs/promises";
 
 import Fetcher from "./fetcher"
 
 async function main() {
+    const paths = envPaths("analyseddm");
+
     const browser = await puppeteer.connect({ browserURL: "http://127.0.0.1:9222" });
 
     const page = await browser.newPage();
@@ -17,8 +21,14 @@ async function main() {
 
     await fetcher.start();
 
+    const outputFilePath = paths.cache + "/out.json";
     const messages = fetcher.getMessages();
-    console.log(messages);
+    await fs.mkdir(paths.cache, { recursive: true });
+    await fs.writeFile(
+        outputFilePath,
+        JSON.stringify(messages),
+    );
+    console.log(`Output written to: ${outputFilePath}`);
 
     await browser.disconnect();
 }
