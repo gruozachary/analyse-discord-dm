@@ -4,6 +4,7 @@ export interface Message {
     user: string | null;
     id: number,
     text: string,
+    timestamp: number
 }
 
 enum FetcherState {
@@ -51,6 +52,9 @@ export default class Fetcher {
                 .$eval("[class^='username']", (el) => el.innerHTML)
                 .catch(() => null);
 
+            const time = await item
+                .$eval("time", (el) => Date.parse(el.dateTime));
+
             const messageContent = await item.$("[id^='message-content-']:not([class^='repliedTextContent'])");
 
             const messageText = await messageContent?.$$eval("span", els => els.map(el => el.textContent!.trim()).join(" "));
@@ -59,7 +63,8 @@ export default class Fetcher {
             this.messages.set(messageId, {
                 user: username,
                 id: messageId,
-                text: messageText || "UNKNOWN"
+                text: messageText || "UNKNOWN",
+                timestamp: time
             });
         }
 
