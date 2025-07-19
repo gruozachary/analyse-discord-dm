@@ -127,12 +127,13 @@ export default class Fetcher {
         const body = (await this.page.$(".scroller__36d07"))!;
         const list = (await body.$("ol"))!;
 
-        for (let i = 0; i < 10; i++) {
+        let exit = false;
+        do {
             if (await this.loadMessages(body)) {
-                break;
+                exit = true;
             }
             await this.fetchMessages(list);
-        }
+        } while (!exit);
 
         this.state = FetcherState.Finished;
     }
