@@ -1,6 +1,7 @@
 import { Page, ConsoleMessage, ElementHandle } from "puppeteer-core";
 
 export interface Message {
+    user: string | null;
     id: number,
     text: string,
 }
@@ -38,9 +39,13 @@ export default class Fetcher {
 
             const arr = id.match(Fetcher.chatHtmlIdRegex);
 
-            if (arr === null || arr.length < 1) {
+            if (arr === null || arr.length < 2) {
                 throw new Error("Error parsing message ID");
             }
+
+            const username = await item
+                .$eval("[class^='username']", (el) => el.innerHTML)
+                .catch(() => null);
 
             const messageContent = await item.$("[id^='message-content-']:not([class^='repliedTextContent'])");
 
@@ -48,6 +53,7 @@ export default class Fetcher {
 
             const messageId = Number.parseInt(arr[1]);
             this.messages.set(messageId, {
+                user: username,
                 id: messageId,
                 text: messageText || "UNKNOWN"
             });
