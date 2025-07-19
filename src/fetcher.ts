@@ -42,15 +42,14 @@ export default class Fetcher {
                 throw new Error("Error parsing message ID");
             }
 
-            const content = (await item.$("[id^='message-content-']:not([class^='repliedTextContent'])")
-                .then(handle =>
-                    handle?.$eval("span", el => el.textContent?.trim()))
-                .catch(() => "ERROR"))!;
+            const messageContent = await item.$("[id^='message-content-']:not([class^='repliedTextContent'])");
+
+            const messageText = await messageContent?.$$eval("span", els => els.map(el => el.textContent!.trim()).join(" "));
 
             const messageId = Number.parseInt(arr[1]);
             this.messages.set(messageId, {
                 id: messageId,
-                text: content
+                text: messageText || "UNKNOWN"
             });
         }
 
