@@ -105,6 +105,14 @@ export default class Fetcher {
         return res;
     }
 
+    private fixUsernames(messages: Array<Message>) {
+        for (let i = 1; i < messages.length; i++) {
+            if (messages[i].user === null) {
+                messages[i].user = messages[i - 1].user;
+            }
+        }
+    }
+
     async init(): Promise<void> {
         this.assertState(FetcherState.Uninitialised);
 
@@ -132,6 +140,10 @@ export default class Fetcher {
     getMessages(): Array<Message> {
         this.assertState(FetcherState.Finished);
 
-        return [...this.messages.values()].sort((m1, m2) => m1.id - m2.id);
+        const messageArr = [...this.messages.values()].sort((m1, m2) => m1.id - m2.id);
+
+        this.fixUsernames(messageArr);
+
+        return messageArr;
     }
 }
