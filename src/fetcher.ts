@@ -70,16 +70,33 @@ export default class Fetcher {
         });
     }
 
-    private async loadMessages(scroller: ElementHandle) {
+    private async waitTillFinished(body: ElementHandle): Promise<void> {
+        await body.waitForSelector("[class*='heading-xxl']");
+    }
+
+    private async loadMessages(scroller: ElementHandle): Promise<boolean> {
         await scroller.evaluate((el) => {
             el.scrollTop = 0;
         });
 
         console.log("Waiting for new messages");
 
-        await this.waitForMessageLoad();
+
+        const res = await Promise.race([
+            Promise.race([
+                this.waitTillFinished(scroller),
+                new Promise((_, reject) => setTimeout(() => reject(), 5000))
+            ]).then(() => true),
+            Promise.race([
+                this.waitForMessageLoad(),
+                new Promise((_, reject) => setTimeout(() => reject(), 5000))
+            ]).then(() => false),
+        ]);
+
 
         console.log("New messages loaded completed.");
+
+        return res;
     }
 
     async init(): Promise<void> {
@@ -96,9 +113,11 @@ export default class Fetcher {
         const body = (await this.page.$(".scroller__36d07"))!;
         const list = (await body.$("ol"))!;
 
-        for (let i = 0; i < 1; i++) {
+        for (let i = 0; i < 10; i++) {
+            if (await this.loadMessages(body)) {
+                break;
+            }
             await this.fetchMessages(list);
-            await this.loadMessages(body);
         }
 
         this.state = FetcherState.Finished;
