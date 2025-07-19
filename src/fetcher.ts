@@ -37,6 +37,10 @@ export default class Fetcher {
         for (const item of items) {
             const id = await item.evaluate(el => el.id);
 
+            if (await item.$("div[class*='system']") !== null) {
+                continue;
+            }
+
             const arr = id.match(Fetcher.chatHtmlIdRegex);
 
             if (arr === null || arr.length < 2) {
