@@ -5,6 +5,19 @@ import fs from "node:fs/promises";
 
 import Fetcher from "./fetcher"
 
+function getOutputFilename() {
+    const date = new Date();
+
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const day = date.getDay();
+    const hours = date.getHours();
+    const minutes = date.getMinutes();
+    const seconds = date.getSeconds();
+
+    return `${year}-${month}-${day}_${hours}-${minutes}-${seconds}`
+}
+
 async function main() {
     const paths = envPaths("analyseddm");
 
@@ -21,7 +34,7 @@ async function main() {
 
     await fetcher.start();
 
-    const outputFilePath = paths.cache + "/out.json";
+    const outputFilePath = `${paths.cache}/${getOutputFilename()}`;
     const messages = fetcher.getMessages();
     await fs.mkdir(paths.cache, { recursive: true });
     await fs.writeFile(
