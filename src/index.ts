@@ -15,7 +15,7 @@ function getOutputFilename() {
     const minutes = date.getMinutes();
     const seconds = date.getSeconds();
 
-    return `${year}-${month}-${day}_${hours}-${minutes}-${seconds}`
+    return `${year}-${month}-${day}_${hours}-${minutes}-${seconds}.json`
 }
 
 async function main() {
