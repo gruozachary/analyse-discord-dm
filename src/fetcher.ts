@@ -32,6 +32,28 @@ export default class Fetcher {
         }
     }
 
+    private async getMessageContent(message: ElementHandle): Promise<string> {
+        const contentDiv = await message.$("[id^='message-content-']:not([class^='repliedTextContent'])");
+
+        const contentArr = await contentDiv?.$$("span");
+
+        if (contentArr === undefined) {
+            throw new Error("Cannot get message content!");
+        }
+
+        const texts = await Promise.all(contentArr.map(async (handle) => {
+            let text = await handle.evaluate((el) => el.innerText);
+
+            if (await handle.evaluate((el) => el.className.startsWith("emoji"))) {
+                text += await handle.$eval("img", (el) => el.getAttribute("data-name"));
+            }
+
+            return text;
+        }));
+
+        return texts.join("");
+    }
+
     private async fetchMessages(list: ElementHandle): Promise<void> {
         const items = (await list.$$("li"))!;
 
@@ -57,13 +79,13 @@ export default class Fetcher {
 
             const messageContent = await item.$("[id^='message-content-']:not([class^='repliedTextContent'])");
 
-            const messageText = await messageContent?.$$eval("span", els => els.map(el => el.textContent!.trim()).join(" "));
+            const messageText = await this.getMessageContent(item);
 
             const messageId = Number.parseInt(arr[1]);
             this.messages.set(messageId, {
                 user: username,
                 id: messageId,
-                text: messageText || "UNKNOWN",
+                text: messageText,
                 timestamp: time
             });
         }
