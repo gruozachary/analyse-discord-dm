@@ -73,7 +73,7 @@ export default class Fetcher {
 
     private async getMessageUsername(message: ElementHandle): Promise<string | null> {
         return await message
-            .$eval("[class^='username']", (el) => el.innerHTML)
+            .$eval("h3 [class^='username']", (el) => el.innerHTML)
             .catch(() => null);
     }
 
