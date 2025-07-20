@@ -3,10 +3,12 @@ import ora from "ora";
 
 export interface Message {
     id: number,
-    user: string | null;
+    user: string;
     text: string,
     timestamp: number
 }
+
+type PartialMessage = Omit<Message, "user"> & Partial<Pick<Message, "user">>;
 
 enum FetcherState {
     Uninitialised,
@@ -22,7 +24,7 @@ export default class Fetcher {
 
     private state: FetcherState = FetcherState.Uninitialised;
 
-    private readonly messages = new Map<number, Message>;
+    private readonly messages = new Map<number, PartialMessage>;
 
     constructor(private readonly page: Page) { }
 
@@ -71,10 +73,10 @@ export default class Fetcher {
         return await message.$eval("time", (el) => Date.parse(el.dateTime));
     }
 
-    private async getMessageUsername(message: ElementHandle): Promise<string | null> {
+    private async getMessageUsername(message: ElementHandle): Promise<string | undefined> {
         return await message
             .$eval("h3 [class^='username']", (el) => el.innerHTML)
-            .catch(() => null);
+            .catch(() => undefined);
     }
 
     private async fetchMessages(list: ElementHandle): Promise<void> {
@@ -133,7 +135,7 @@ export default class Fetcher {
         return res;
     }
 
-    private fixUsernames(messages: Array<Message>) {
+    private fixUsernames(messages: Array<PartialMessage>) {
         for (let i = 1; i < messages.length; i++) {
             if (messages[i].user === null) {
                 messages[i].user = messages[i - 1].user;
@@ -181,6 +183,6 @@ export default class Fetcher {
 
         this.fixUsernames(messageArr);
 
-        return messageArr;
+        return messageArr as Array<Message>;
     }
 }
