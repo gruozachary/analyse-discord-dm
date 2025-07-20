@@ -1,8 +1,8 @@
 import { Page, ConsoleMessage, ElementHandle } from "puppeteer-core";
 
 export interface Message {
-    user: string | null;
     id: number,
+    user: string | null;
     text: string,
     timestamp: number
 }
@@ -32,39 +32,65 @@ export default class Fetcher {
         }
     }
 
+    private async getMessageContent(message: ElementHandle): Promise<string> {
+        const contentDiv = await message.$("[id^='message-content-']:not([class^='repliedTextContent'])");
+
+        const contentArr = await contentDiv?.$$("span");
+
+        if (contentArr === undefined) {
+            throw new Error("Cannot get message content!");
+        }
+
+        const texts = await Promise.all(contentArr.map(async (handle) => {
+            let text = await handle.evaluate((el) => el.innerText);
+
+            if (await handle.evaluate((el) => el.className.startsWith("emoji"))) {
+                text += await handle.$eval("img", (el) => el.getAttribute("data-name"));
+            }
+
+            return text;
+        }));
+
+        return texts.join("");
+    }
+
+    private async getMessageId(message: ElementHandle): Promise<number> {
+        const id = await message.evaluate(el => el.id);
+
+        const arr = id.match(Fetcher.chatHtmlIdRegex);
+
+        if (arr === null || arr.length < 2) {
+            throw new Error("Error parsing message ID");
+        }
+
+        return Number.parseInt(arr[1]);
+    }
+
+    private async getMessageTimestamp(message: ElementHandle): Promise<number> {
+        return await message.$eval("time", (el) => Date.parse(el.dateTime));
+    }
+
+    private async getMessageUsername(message: ElementHandle): Promise<string | null> {
+        return await message
+            .$eval("[class^='username']", (el) => el.innerHTML)
+            .catch(() => null);
+    }
+
     private async fetchMessages(list: ElementHandle): Promise<void> {
         const items = (await list.$$("li"))!;
 
         for (const item of items) {
-            const id = await item.evaluate(el => el.id);
-
             if (await item.$("div[class*='system']") !== null) {
                 continue;
             }
 
-            const arr = id.match(Fetcher.chatHtmlIdRegex);
+            const messageId = await this.getMessageId(item);
 
-            if (arr === null || arr.length < 2) {
-                throw new Error("Error parsing message ID");
-            }
-
-            const username = await item
-                .$eval("[class^='username']", (el) => el.innerHTML)
-                .catch(() => null);
-
-            const time = await item
-                .$eval("time", (el) => Date.parse(el.dateTime));
-
-            const messageContent = await item.$("[id^='message-content-']:not([class^='repliedTextContent'])");
-
-            const messageText = await messageContent?.$$eval("span", els => els.map(el => el.textContent!.trim()).join(" "));
-
-            const messageId = Number.parseInt(arr[1]);
             this.messages.set(messageId, {
-                user: username,
                 id: messageId,
-                text: messageText || "UNKNOWN",
-                timestamp: time
+                user: await this.getMessageUsername(item),
+                text: await this.getMessageContent(item),
+                timestamp: await this.getMessageTimestamp(item)
             });
         }
 
