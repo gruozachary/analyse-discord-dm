@@ -1,4 +1,5 @@
 import { Page, ConsoleMessage, ElementHandle } from "puppeteer-core";
+import ora from "ora";
 
 export interface Message {
     id: number,
@@ -93,8 +94,6 @@ export default class Fetcher {
                 timestamp: await this.getMessageTimestamp(item)
             });
         }
-
-        console.log("Fetching completed.");
     }
 
     private async waitForMessageLoad(): Promise<void> {
@@ -120,9 +119,6 @@ export default class Fetcher {
             el.scrollTop = 0;
         });
 
-        console.log("Waiting for new messages");
-
-
         const res = await Promise.race([
             Promise.race([
                 this.waitTillFinished(scroller),
@@ -133,9 +129,6 @@ export default class Fetcher {
                 new Promise((_, reject) => setTimeout(() => reject(), 5000))
             ]).then(() => false),
         ]);
-
-
-        console.log("New messages loaded completed.");
 
         return res;
     }
@@ -164,10 +157,18 @@ export default class Fetcher {
 
         let exit = false;
         do {
+            const spinner = ora();
+            spinner.start("Loading");
+
             if (await this.loadMessages(body)) {
                 exit = true;
             }
+
+            spinner.text = "Scraping"
+
             await this.fetchMessages(list);
+
+            spinner.succeed("Completed")
         } while (!exit);
 
         this.state = FetcherState.Finished;
