@@ -1,8 +1,8 @@
 import { Page, ConsoleMessage, ElementHandle } from "puppeteer-core";
 
 export interface Message {
-    user: string | null;
     id: number,
+    user: string | null;
     text: string,
     timestamp: number
 }
@@ -87,8 +87,8 @@ export default class Fetcher {
             const messageId = await this.getMessageId(item);
 
             this.messages.set(messageId, {
-                user: await this.getMessageUsername(item),
                 id: messageId,
+                user: await this.getMessageUsername(item),
                 text: await this.getMessageContent(item),
                 timestamp: await this.getMessageTimestamp(item)
             });
