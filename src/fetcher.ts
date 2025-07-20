@@ -54,39 +54,43 @@ export default class Fetcher {
         return texts.join("");
     }
 
+    private async getMessageId(message: ElementHandle): Promise<number> {
+        const id = await message.evaluate(el => el.id);
+
+        const arr = id.match(Fetcher.chatHtmlIdRegex);
+
+        if (arr === null || arr.length < 2) {
+            throw new Error("Error parsing message ID");
+        }
+
+        return Number.parseInt(arr[1]);
+    }
+
+    private async getMessageTimestamp(message: ElementHandle): Promise<number> {
+        return await message.$eval("time", (el) => Date.parse(el.dateTime));
+    }
+
+    private async getMessageUsername(message: ElementHandle): Promise<string | null> {
+        return await message
+            .$eval("[class^='username']", (el) => el.innerHTML)
+            .catch(() => null);
+    }
+
     private async fetchMessages(list: ElementHandle): Promise<void> {
         const items = (await list.$$("li"))!;
 
         for (const item of items) {
-            const id = await item.evaluate(el => el.id);
-
             if (await item.$("div[class*='system']") !== null) {
                 continue;
             }
 
-            const arr = id.match(Fetcher.chatHtmlIdRegex);
+            const messageId = await this.getMessageId(item);
 
-            if (arr === null || arr.length < 2) {
-                throw new Error("Error parsing message ID");
-            }
-
-            const username = await item
-                .$eval("[class^='username']", (el) => el.innerHTML)
-                .catch(() => null);
-
-            const time = await item
-                .$eval("time", (el) => Date.parse(el.dateTime));
-
-            const messageContent = await item.$("[id^='message-content-']:not([class^='repliedTextContent'])");
-
-            const messageText = await this.getMessageContent(item);
-
-            const messageId = Number.parseInt(arr[1]);
             this.messages.set(messageId, {
-                user: username,
+                user: await this.getMessageUsername(item),
                 id: messageId,
-                text: messageText,
-                timestamp: time
+                text: await this.getMessageContent(item),
+                timestamp: await this.getMessageTimestamp(item)
             });
         }
 
